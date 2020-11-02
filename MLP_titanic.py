@@ -2,6 +2,7 @@
 import numpy as np
 import scipy.special as sp
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize
 # библиотека для работы с dataframe
 import pandas as pd
 
@@ -13,6 +14,7 @@ def f(x):
 # производная активационной функции
 def f1(x):
     return x * (1 - x)
+
 
 # функция инициализации весов
 # на вход имеет несколько аргументов:
@@ -68,7 +70,6 @@ def train(inputs_list, w1, w2, w3, targets_list, lr, error):
             inputs = np.array(inputs, ndmin=2)
 #            targets - содержит локальный таргет для данного инпута
             targets = np.array(targets_list[i], ndmin=2)
-
 #            прямое распространение
 #            скалярное произведение строки на матрицу весов
             hidden_in = np.dot(inputs, w1)
@@ -89,9 +90,9 @@ def train(inputs_list, w1, w2, w3, targets_list, lr, error):
 #            здесь значение "out" равно значение "in"
             final_out = final_in
             
-            
 #            вычисление ошибки выходного слоя
             output_error = targets - final_out
+            
 #            вычисление ошибки второго скрытого слоя
             hidden_error2 = np.dot(output_error, w3.T)
 #            вычисление ошибки первого скрытого слоя
@@ -109,68 +110,8 @@ def train(inputs_list, w1, w2, w3, targets_list, lr, error):
 #        глобальная ошибка - это средняя по модуля от всех локальных ошибок
         global_error = abs(np.mean(local_error))
 #        global_error = np.sqrt(((local_error) ** 2).mean())
-        '''
-        if sup == 0:
-            lr = 0.2
-
-        if global_error - last_gl_e > 1e-8:
-            sup += 1
-        
-        if sup == 100:
-            lr = 0.7
-            sup = 0
-            print('123')
-        '''
-
-        
-        #lr_Start = 0.2
-        #era = 1001 
-        #eq = 84
-        #era > 1000
-        if global_error >= last_gl_e:
-            if sup > 0:
-                sup = 0
-            sup -= 1
-        else:
-            if sup < 0:
-                sup = 0
-            sup += 1
-        
-        if sup == 0:
-            lr = 0.2
-
-        if sup == 100:
-            lr = 0.7
-            sup = 0
-            
-
-        '''
-        #lr_start = 0.2
-        #era = 146
-        #eq = 82
-        if global_error >= last_gl_e:
-            if sup > 0:
-                sup = 0
-            sup -= 1
-        else:
-            if sup < 0:
-                sup = 0
-            sup += 1
-
-        if sup == 5:
-            lr = 0.3
-            sup = 0
-            
-        elif sup ==-7:
-            lr = 0.9
-            sup = 0
-            print('123')
-        '''
         
         last_gl_e = global_error
-        
-        
-
 #        эпоха увеличивается на 1
         era += 1
 #        вывод в консоль текущую глобальную ошибку
@@ -178,10 +119,11 @@ def train(inputs_list, w1, w2, w3, targets_list, lr, error):
 #        в список ошибок добавляется глобальная ошибка
         list_error.append(global_error)
 #        если при обучении количество эпох превысит порог 10000 то обучение прекратится
-        if era > 1500: 
+        if era > 1000: 
             print('gl=',global_error)
             break
 #    возвращает измененные веса, количество эпох, и список ошибок
+    print(global_error)
     return w1, w2, w3, era, list_error
 
 
@@ -235,18 +177,19 @@ test = np.c_[np.ones(114),test]
 targets_test = target_data[600:714]
 
 # скорость обучения
-lr = 0.2
+lr = 0.714
 # допустимая погрешность обучения (** - это степень)
-eps = 5e-9
+eps = 1e-9
 
 # количество узлов в входном слое с учетом единичке
 # т.е. кол-во столбцов датасета +1 мнимая единичка
 input_layer = 7
 
-hidden_layer = 8
-hidden_layer2 = 3
+hidden_layer = 7
+hidden_layer2 = 2
 
 output_layer = 1
+
 
 # инициализация весов в зависимости от количества узлов в слоях сети
 w1, w2, w3 = init_weight(input_layer, hidden_layer, hidden_layer2, output_layer)
@@ -255,10 +198,12 @@ w1, w2, w3 = init_weight(input_layer, hidden_layer, hidden_layer2, output_layer)
 # train network
 w1, w2, w3, era, lst = train(inputs, w1, w2, w3, targets, lr, eps)
 # вывод количества пройденных эпох
+print('lr = ', lr)
 print("Количество пройденных эпох = " + str(era))
 
 # result_test - сохранит значение "outs"
 result_test = query(test,w1,w2,w3)
+
 # проверка совпадают ли значения targets_test с result_test
 # Сумма всех совпадений, разделенная на количество выборки дает точность обучения в среднем 85%
 eq = sum(result_test == targets_test)/len(test)
@@ -267,11 +212,9 @@ print("Результат тестирования (в %) = " + str(eq*100))
 
 
 
-
 #отрисовка побочных графиков
 #plt.plot(np.arange(114),result_test,color='r')
 #plt.plot(np.arange(114),targets_test,color='b')
-
 # отрисовка графика кривой ошибки
 fig = plt.figure(figsize=(20,20))
 plt.plot(np.arange(era),lst)
